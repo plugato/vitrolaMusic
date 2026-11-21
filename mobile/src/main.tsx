@@ -15,6 +15,7 @@ import { flushAll } from './server/persist';
 import { platform } from '../../frontend/src/platform';
 import { androidAudioOutput } from './audioOutput';
 import { androidCar, startMediaSession } from './mediaSession';
+import { startCarBridge } from './carBridge';
 import { detectMediaRangeMode } from './shims/paths';
 
 const root = createRoot(document.getElementById('root')!);
@@ -45,6 +46,7 @@ async function start(): Promise<void> {
   server.startBackgroundTasks();
   startKeepAlive(server.pendingDownloads);
   startMediaSession();
+  startCarBridge();
 }
 
 start().catch((err) => {

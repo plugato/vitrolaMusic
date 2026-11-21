@@ -1,0 +1,71 @@
+# APK do fork (Android Auto). Roda a cada push no branch feat/android-auto ou na main, e
+# manualmente pela aba Actions. Com os secrets de assinatura configurados, gera o APK de
+# release assinado; sem eles, gera um APK de debug (assinado com uma chave temporária do
+# runner: cada build novo precisa desinstalar o anterior). O APK fica nos artefatos do run.
+name: APK (fork)
+
+on:
+  push:
+    branches: [feat/android-auto, main]
+    paths: ['mobile/**', 'frontend/src/**', 'api/src/**', '.github/**']
+  workflow_dispatch:
+
+concurrency:
+  group: apk-fork-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      HAS_KEY: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: APK assinado (secrets configurados)
+        if: env.HAS_KEY == 'true'
+        id: release
+        uses: ./.github/actions/build-apk
+        with:
+          keystore-base64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          keystore-password: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          key-alias: ${{ secrets.ANDROID_KEY_ALIAS }}
+          key-password: ${{ secrets.ANDROID_KEY_PASSWORD }}
+
+      - uses: actions/setup-node@v5
+        if: env.HAS_KEY != 'true'
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - uses: actions/setup-java@v5
+        if: env.HAS_KEY != 'true'
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: gradle
+
+      - name: APK de debug (sem secrets)
+        if: env.HAS_KEY != 'true'
+        shell: bash
+        run: |
+          npm ci --prefix mobile
+          npm run typecheck --prefix mobile
+          npm test --prefix mobile
+          cd mobile
+          npx vite build
+          npx cap sync android
+          cd android
+          java -classpath gradle/wrapper/gradle-wrapper.jar org.gradle.wrapper.GradleWrapperMain \
+            assembleDebug --no-daemon --stacktrace
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vitrola-android-auto-${{ github.sha }}
+          path: |
+            mobile/android/app/build/outputs/apk/release/app-release.apk
+            mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30

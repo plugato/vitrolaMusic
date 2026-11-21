@@ -166,6 +166,14 @@ make mobile-test  # testa a API local pelos adaptadores Android
   - **Modo carro:** quando o celular conecta no Bluetooth do carro, abre um player em tela cheia com a capa e botões grandes; ao desconectar, volta ao normal. O botão 🚗 do player abre a qualquer momento. Para reconhecer o carro, o Android pede a permissão **"Dispositivos próximos"** na primeira vez; dá para desligar a abertura automática nas Configurações.
 - Saída de áudio: o botão "Tocar em" do player abre o seletor de saída do Android. Para tocar numa **Alexa/Echo**, pareie o Echo por Bluetooth (veja [Funcionalidades do player](#funcionalidades-do-player)).
 
+#### Android Auto
+
+O Vitrola aparece na central do carro como app de música, com **Recentes, Playlists, Álbuns e Artistas**, busca pelo teclado (com o carro parado) e por voz ("Ok Google, tocar Legião Urbana no Vitrola").
+
+- Com o app **aberto** no celular (mesmo em segundo plano), o carro usa o player normal: stream, crossfade e busca também no catálogo (a faixa é importada e baixada ao tocar).
+- Com o app **fechado**, um player nativo toca as músicas **já baixadas**. Ao abrir o app, ele continua de onde o carro parou.
+- Como o APK não vem da Play Store, ligue uma vez no celular: **Android Auto → toque 10× em "Versão" → ⋮ → Configurações do desenvolvedor → Fontes desconhecidas**. Depois, se o Vitrola não aparecer, em Android Auto → Personalizar menu de apps, marque o Vitrola.
+
 #### Instalar pelo USB no WSL2
 
 O `adb` do Linux no WSL2 não enxerga aparelhos USB. Por isso o `make apk-install` usa o `adb.exe` do Windows (do Android SDK em `C:\Android\Sdk` ou em `%LOCALAPPDATA%\Android\Sdk`); para outro caminho, use `make apk-install ADB=/caminho/adb.exe`.

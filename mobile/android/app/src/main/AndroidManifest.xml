@@ -30,6 +30,28 @@
             android:exported="false"
             android:foregroundServiceType="mediaPlayback|dataSync" />
 
+        <!-- Android Auto: o app aparece na central como app de música (navegação + busca). -->
+        <meta-data
+            android:name="com.google.android.gms.car.application"
+            android:resource="@xml/automotive_app_desc" />
+        <meta-data
+            android:name="com.google.android.gms.car.notification.SmallIcon"
+            android:resource="@mipmap/ic_launcher" />
+
+        <service
+            android:name=".VitrolaBrowserService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.media.browse.MediaBrowserService" />
+            </intent-filter>
+        </service>
+
+        <!-- Capas para a tela do carro (o Android Auto só lê ícones por content://). -->
+        <provider
+            android:name=".ArtProvider"
+            android:authorities="${applicationId}.art"
+            android:exported="true" />
+
         <!-- Botões da notificação de música (voltar, tocar/pausar, avançar). -->
         <receiver
             android:name=".MediaActionReceiver"

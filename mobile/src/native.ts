@@ -63,6 +63,19 @@ export interface MediaPlugin {
   /** O áudio ia sair pelo alto-falante: Bluetooth do carro desligou ou o fone saiu. */
   addListener(event: 'noisy', fn: () => void): Promise<PluginListenerHandle>;
   addListener(event: 'carChanged', fn: (e: { connected: boolean; name: string; permission: boolean }) => void): Promise<PluginListenerHandle>;
+  /** Android Auto: tocar estas faixas (IDs da biblioteca) a partir de `index` (`carBridge.ts`). */
+  addListener(
+    event: 'carPlayQueue',
+    fn: (e: { ids: string[]; index: number; shuffle: boolean; positionMs: number; play: boolean }) => void,
+  ): Promise<PluginListenerHandle>;
+  /** Android Auto: importar do catálogo e tocar. */
+  addListener(event: 'carPlayCatalog', fn: (e: { catalogId: string }) => void): Promise<PluginListenerHandle>;
+  /** Android Auto: buscar no catálogo; responda com `carSearchResult`. */
+  addListener(event: 'carSearch', fn: (e: { requestId: number; query: string }) => void): Promise<PluginListenerHandle>;
+  carSearchResult(options: {
+    requestId: number;
+    tracks: { catalogId: string; title: string; artistName: string; albumTitle: string }[];
+  }): Promise<void>;
 }
 
 export const Media = registerPlugin<MediaPlugin>('Media');
