@@ -72,6 +72,9 @@ export interface MediaPlugin {
   addListener(event: 'carPlayCatalog', fn: (e: { catalogId: string }) => void): Promise<PluginListenerHandle>;
   /** Android Auto: buscar no catálogo; responda com `carSearchResult`. */
   addListener(event: 'carSearch', fn: (e: { requestId: number; query: string }) => void): Promise<PluginListenerHandle>;
+  /** Diagnóstico do Android Auto (texto para as Configurações). */
+  getCarDebug(): Promise<{ log: string }>;
+  clearCarDebug(): Promise<void>;
   carSearchResult(options: {
     requestId: number;
     tracks: { catalogId: string; title: string; artistName: string; albumTitle: string }[];

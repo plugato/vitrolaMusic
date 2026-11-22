@@ -34,6 +34,9 @@ export interface CarHooks {
   requestPermission(): Promise<CarState>;
   /** Avisa quando o carro conecta/desconecta. Devolve a função para cancelar. */
   onChange(fn: (state: CarState) => void): () => void;
+  /** Diagnóstico do Android Auto (APK): o que o carro pediu ao app. */
+  getDebugLog?(): Promise<string>;
+  clearDebugLog?(): Promise<void>;
 }
 
 export type AudioOutputKind = 'speaker' | 'wired' | 'bluetooth' | 'usb' | 'hdmi' | 'other';

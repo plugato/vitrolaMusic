@@ -183,6 +183,34 @@ public class MediaPlugin extends Plugin implements MediaControls.CarBridge {
         call.resolve();
     }
 
+    /** Diagnóstico do Android Auto para as Configurações (`CarDebug`). */
+    @PluginMethod
+    public void getCarDebug(PluginCall call) {
+        Context ctx = getContext();
+        StringBuilder head = new StringBuilder();
+        head.append("Android ").append(Build.VERSION.RELEASE).append(" · ").append(Build.MANUFACTURER).append(' ').append(Build.MODEL).append('\n');
+        head.append("Android Auto: ").append(packageVersion(ctx, "com.google.android.projection.gearhead")).append('\n');
+        head.append("Notificações: ").append(androidx.core.app.NotificationManagerCompat.from(ctx).areNotificationsEnabled() ? "ligadas" : "DESLIGADAS").append('\n');
+        head.append("Banco: ").append(new java.io.File(ctx.getFilesDir(), "vitrola/vitrola.db").isFile() ? "ok" : "não encontrado").append('\n');
+        JSObject r = new JSObject();
+        r.put("log", head + "\n" + CarDebug.read(ctx));
+        call.resolve(r);
+    }
+
+    @PluginMethod
+    public void clearCarDebug(PluginCall call) {
+        CarDebug.clear(getContext());
+        call.resolve();
+    }
+
+    private static String packageVersion(Context ctx, String pkg) {
+        try {
+            return ctx.getPackageManager().getPackageInfo(pkg, 0).versionName;
+        } catch (Exception e) {
+            return "não instalado";
+        }
+    }
+
     @PluginMethod
     public void getCarState(PluginCall call) {
         checkCar();

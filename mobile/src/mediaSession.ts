@@ -76,4 +76,6 @@ export const androidCar: CarHooks = {
     const handle = Media.addListener('carChanged', fn);
     return () => void handle.then((h) => h.remove());
   },
+  getDebugLog: async () => (await Media.getCarDebug()).log,
+  clearDebugLog: () => Media.clearCarDebug(),
 };

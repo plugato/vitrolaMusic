@@ -1,6 +1,7 @@
 package app.vitrola.music;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -18,6 +19,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(AudioOutputPlugin.class);
         registerPlugin(MediaPlugin.class);
         super.onCreate(savedInstanceState);
+        logOpen("abriu", getIntent());
 
         // Serve as músicas baixadas com suporte real a Range (seek e crossfade).
         bridge.setWebViewClient(new MediaWebViewClient(bridge));
@@ -34,5 +36,19 @@ public class MainActivity extends BridgeActivity {
             && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[] { Manifest.permission.POST_NOTIFICATIONS }, 1);
         }
+    }
+
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        logOpen("voltou", intent);
+    }
+
+    /** Diagnóstico do Android Auto: quem abriu o app e com qual intent. */
+    private void logOpen(String what, Intent intent) {
+        if (intent == null) return;
+        String ref = Build.VERSION.SDK_INT >= 22 && getReferrer() != null ? getReferrer().toString() : "?";
+        CarDebug.note(this, "App " + what + ": " + intent.getAction() + " " + intent.getCategories()
+            + " flags=0x" + Integer.toHexString(intent.getFlags()) + " por " + ref);
     }
 }

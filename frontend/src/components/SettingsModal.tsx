@@ -204,6 +204,8 @@ export function SettingsModal({ open, onClose }: Props) {
             </div>
           )}
 
+          {platform.car?.getDebugLog && <CarDebugPanel />}
+
           <div className="form-group">
             <label>Limpar faixas não tocadas após</label>
             <select
@@ -430,6 +432,47 @@ function VersionInfo({ open }: { open: boolean }) {
             </button>
           </div>
         </>
+      )}
+    </div>
+  );
+}
+
+/** Diagnóstico do Android Auto (APK): mostra o que o carro pediu ao app, para achar falhas. */
+function CarDebugPanel() {
+  const [log, setLog] = useState<string | null>(null);
+  const load = () => {
+    platform.car?.getDebugLog?.().then(setLog, () => setLog('Não foi possível ler o diagnóstico.'));
+  };
+  return (
+    <div className="form-group">
+      <label>Diagnóstico do Android Auto</label>
+      <p className="hint">
+        Mostra quando o carro conectou no Vitrola e o que pediu. Toque no Vitrola na tela do carro, volte aqui e
+        toque em "Atualizar".
+      </p>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <button type="button" className="small" onClick={load}>
+          {log === null ? 'Mostrar' : 'Atualizar'}
+        </button>
+        {log !== null && (
+          <>
+            <button type="button" className="small" onClick={() => void navigator.clipboard?.writeText(log)}>
+              Copiar
+            </button>
+            <button
+              type="button"
+              className="small"
+              onClick={() => void platform.car?.clearDebugLog?.().then(load)}
+            >
+              Limpar
+            </button>
+          </>
+        )}
+      </div>
+      {log !== null && (
+        <pre style={{ whiteSpace: 'pre-wrap', fontSize: 12, maxHeight: 260, overflow: 'auto', marginTop: 8 }}>
+          {log.trim() || 'Nada registrado ainda.'}
+        </pre>
       )}
     </div>
   );
