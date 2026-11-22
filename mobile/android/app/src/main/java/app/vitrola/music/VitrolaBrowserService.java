@@ -23,14 +23,19 @@ import java.util.concurrent.Executors;
  */
 public class VitrolaBrowserService extends MediaBrowserServiceCompat {
 
-    /** Quem pode navegar na biblioteca: Android Auto, Assistente e o próprio sistema. */
-    private static final Set<String> ALLOWED = new HashSet<>(Arrays.asList(
+    /**
+     * Clientes conhecidos (só para o diagnóstico). Não filtramos por pacote: dependendo da
+     * versão, o Android Auto conecta pelo próprio app, pelo Google Play Services
+     * (`com.google.android.gms`) ou pelo Assistente, e recusar um deles fazia o carro só abrir
+     * o app no celular. A biblioteca exposta é só a lista de músicas.
+     */
+    private static final Set<String> KNOWN = new HashSet<>(Arrays.asList(
         "com.google.android.projection.gearhead", // Android Auto (e o DHU)
+        "com.google.android.gms",
         "com.google.android.carassistant",
         "com.google.android.googlequicksearchbox", // Assistente
-        "com.google.android.apps.automotive.templates.host",
         "com.android.systemui",
-        "com.android.bluetooth" // AVRCP 1.6 (navegação pela central multimídia via Bluetooth)
+        "com.android.bluetooth" // AVRCP 1.6
     ));
     private static final String SEARCH_SUPPORTED = "android.media.browse.SEARCH_SUPPORTED";
 
@@ -43,6 +48,7 @@ public class VitrolaBrowserService extends MediaBrowserServiceCompat {
         super.onCreate();
         library = new CarLibrary(this);
         setSessionToken(MediaControls.get(this).token());
+        CarDebug.log(this, "Serviço do carro iniciado");
     }
 
     @Override
@@ -54,10 +60,11 @@ public class VitrolaBrowserService extends MediaBrowserServiceCompat {
     @Nullable
     @Override
     public BrowserRoot onGetRoot(@NonNull String clientPackageName, int clientUid, @Nullable Bundle rootHints) {
-        boolean trusted = clientUid == Process.myUid() || clientUid == Process.SYSTEM_UID || ALLOWED.contains(clientPackageName);
-        if (!trusted) return null;
+        boolean recent = rootHints != null && rootHints.getBoolean(BrowserRoot.EXTRA_RECENT);
+        CarDebug.log(this, "Conexão de " + clientPackageName + (KNOWN.contains(clientPackageName) || clientUid == Process.myUid() ? "" : " (desconhecido)")
+            + (recent ? " [retomada: recusada]" : ""));
         // Retomada de mídia do Android 11+ (pede só "o último que tocou"): não suportamos.
-        if (rootHints != null && rootHints.getBoolean(BrowserRoot.EXTRA_RECENT)) return null;
+        if (recent) return null;
         Bundle extras = new Bundle();
         extras.putBoolean(SEARCH_SUPPORTED, true);
         extras.putInt(CarLibrary.STYLE_BROWSABLE, CarLibrary.STYLE_LIST);
@@ -69,8 +76,16 @@ public class VitrolaBrowserService extends MediaBrowserServiceCompat {
     public void onLoadChildren(@NonNull String parentId, @NonNull Result<List<MediaItem>> result) {
         result.detach();
         io.execute(() -> {
-            List<MediaItem> items = library.children(parentId);
-            main.post(() -> result.sendResult(items));
+            List<MediaItem> items;
+            try {
+                items = library.children(parentId);
+                CarDebug.log(this, "Lista \"" + parentId + "\": " + items.size() + " itens");
+            } catch (Exception e) {
+                items = new ArrayList<>();
+                CarDebug.log(this, "Erro na lista \"" + parentId + "\": " + e);
+            }
+            List<MediaItem> out = items;
+            main.post(() -> result.sendResult(out));
         });
     }
 
@@ -78,7 +93,15 @@ public class VitrolaBrowserService extends MediaBrowserServiceCompat {
     public void onSearch(@NonNull String query, @Nullable Bundle extras, @NonNull Result<List<MediaItem>> result) {
         result.detach();
         io.execute(() -> {
-            List<MediaItem> local = library.search(query);
+            List<MediaItem> found;
+            try {
+                found = library.search(query);
+            } catch (Exception e) {
+                found = new ArrayList<>();
+                CarDebug.log(this, "Erro na busca: " + e);
+            }
+            List<MediaItem> local = found;
+            CarDebug.log(this, "Busca \"" + query + "\": " + local.size() + " na biblioteca");
             main.post(() -> {
                 MediaControls.CarBridge bridge = MediaControls.get(this).bridge();
                 if (bridge == null || query.trim().length() < 2) {

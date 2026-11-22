@@ -108,14 +108,17 @@ final class CarLibrary {
 
     private <T> T read(Query<T> q, T fallback) {
         File file = new File(dataDir, "vitrola.db");
-        if (!file.isFile()) return fallback;
+        if (!file.isFile()) {
+            CarDebug.log(context, "Banco não encontrado: abra o app no celular uma vez");
+            return fallback;
+        }
         SQLiteDatabase db = null;
         try {
             db = SQLiteDatabase.openDatabase(file.getPath(), null,
                 SQLiteDatabase.OPEN_READONLY | SQLiteDatabase.NO_LOCALIZED_COLLATORS);
             return q.run(db);
         } catch (Exception e) {
-            Log.w(TAG, "Falha ao ler o banco: " + e.getMessage());
+            CarDebug.log(context, "Falha ao ler o banco: " + e.getMessage());
             return fallback;
         } finally {
             if (db != null) db.close();
@@ -362,15 +365,18 @@ final class CarLibrary {
     // ---------------------------------------------------------------- navegação
 
     List<MediaItem> children(String parentId) {
+        if (ROOT.equals(parentId)) {
+            // Não depende do banco: o carro sempre vê as abas, mesmo antes da 1ª abertura do app.
+            List<MediaItem> root = new ArrayList<>();
+            root.add(browsable(RECENT, "Recentes", null, null, STYLE_LIST));
+            root.add(browsable(PLAYLISTS, "Playlists", null, null, STYLE_LIST));
+            root.add(browsable(ALBUMS, "Álbuns", null, null, STYLE_GRID));
+            root.add(browsable(ARTISTS, "Artistas", null, null, STYLE_LIST));
+            return root;
+        }
         return read(db -> {
             List<MediaItem> out = new ArrayList<>();
             switch (parentId) {
-                case ROOT:
-                    out.add(browsable(RECENT, "Recentes", null, null, STYLE_LIST));
-                    out.add(browsable(PLAYLISTS, "Playlists", null, null, STYLE_LIST));
-                    out.add(browsable(ALBUMS, "Álbuns", null, null, STYLE_GRID));
-                    out.add(browsable(ARTISTS, "Artistas", null, null, STYLE_LIST));
-                    return out;
                 case RECENT:
                     out.add(playable("s:all", "Aleatório", "Toda a biblioteca", null, null));
                     addTracks(out, contextTracks(db, "recent"), "recent", null);

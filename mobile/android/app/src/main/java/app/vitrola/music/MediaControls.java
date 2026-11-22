@@ -152,6 +152,7 @@ public final class MediaControls {
     /** Item tocável da lista do carro (`t:...`, `s:...` ou `catalog:...`). */
     void playMediaId(String mediaId) {
         if (mediaId == null) return;
+        CarDebug.log(context, "Tocar " + mediaId + (bridge != null ? " (app aberto)" : " (player nativo)"));
         if (mediaId.startsWith(CarLibrary.CATALOG_PREFIX)) {
             CarBridge b = bridge;
             if (b != null) b.playCatalog(mediaId.substring(CarLibrary.CATALOG_PREFIX.length()));
@@ -166,6 +167,7 @@ public final class MediaControls {
 
     /** Voz: "Ok Google, tocar X no Vitrola". Sem nada na biblioteca, tenta o catálogo. */
     void playFromSearch(String query, Bundle extras) {
+        CarDebug.log(context, "Voz: \"" + query + "\"");
         io.execute(() -> {
             CarLibrary.Queue q = library().forVoice(query, extras);
             main.post(() -> {
