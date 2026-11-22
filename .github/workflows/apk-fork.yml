@@ -14,6 +14,9 @@ concurrency:
   group: apk-fork-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: write
+
 jobs:
   apk:
     runs-on: ubuntu-latest
@@ -69,3 +72,17 @@ jobs:
             mobile/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
+
+      # Link fácil para baixar pelo celular: Releases → "Android Auto (teste)".
+      - name: Publicar o APK na release "android-auto"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          apk=$(ls mobile/android/app/build/outputs/apk/release/app-release.apk mobile/android/app/build/outputs/apk/debug/app-debug.apk 2>/dev/null | head -1)
+          cp "$apk" vitrola-android-auto.apk
+          gh release delete android-auto --yes --cleanup-tag 2>/dev/null || true
+          gh release create android-auto vitrola-android-auto.apk \
+            --target "$GITHUB_SHA" --prerelease \
+            --title "Android Auto (teste)" \
+            --notes "APK gerado do commit ${GITHUB_SHA::7} (branch ${GITHUB_REF_NAME}). Baixe o arquivo vitrola-android-auto.apk abaixo."
